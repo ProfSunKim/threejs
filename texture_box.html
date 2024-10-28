@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Texture Mapping</title>
+    </head>
+    <body>
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://unpkg.com/three/build/three.module.js",
+                    "three/addons/": "https://unpkg.com/three/examples/jsm/"
+                }
+            }
+        </script>
+        <script type="module">
+            import * as THREE from 'three';
+            import { OrbitControls } from  'three/addons/controls/OrbitControls.js';
+        
+            let scene, camera, renderer;
+            let materials = [], cubes = [];
+
+            init();
+
+            function init() {
+                scene = new THREE.Scene();
+
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.001, 1000);
+                camera.position.z = 5;
+
+                renderer = new THREE.WebGLRenderer({antialias:true});
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(renderer.domElement);
+
+                const geometry = new THREE.BoxGeometry();
+                const loader = new THREE.TextureLoader();
+                const tex = loader.load("https://raw.githubusercontent.com/ProfSunKim/threejs/main/logo.bmp");
+                materials.push(new THREE.MeshBasicMaterial({map: tex}));
+                materials.push(new THREE.MeshPhongMaterial({
+                    map: tex, flatShading: false, specular: 0xffffff, shininess: 90.0, 
+                    wireframe: false, emissive: 0x000000
+                }));
+                materials.push(new THREE.MeshLambertMaterial({map: tex}));
+                
+                const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
+                light1.position.set(2, 2, 2);
+                scene.add(light1);
+                const light2 = new THREE.AmbientLight(0x303030);
+                scene.add(light2);
+
+                for(var idx=0; idx<3; idx++) {
+                    cubes.push(new THREE.Mesh(geometry, materials[idx]));
+                    scene.add(cubes[idx]);
+                }
+                cubes[0].position.x = -2;
+                cubes[2].position.x = 2;
+
+                var angle = 0.0;
+                const animate = function() {
+                    requestAnimationFrame(animate);
+
+                    angle += 0.01;
+                    for(var idx=0; idx<3; idx++) {
+                        cubes[idx].rotation.y = angle;
+                    }
+
+                    render();
+                }
+
+                animate();
+
+                window.addEventListener('resize', resize);
+
+                const controls = new OrbitControls(camera, renderer.domElement);
+                controls.minDistance = 2;
+                controls.maxDistance = 10;
+                controls.addEventListener('change', render);
+            }
+
+            function resize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function render() {
+                renderer.render(scene, camera);
+            }
+        </script>
+    </body>
+</html>
