@@ -18,11 +18,10 @@
 
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 			import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-
+			
 			const manager = new THREE.LoadingManager();
 
-			let camera, scene, renderer, object, loader, guiMorphsFolder;
+			let camera, scene, renderer, object, loader;
 			let mixer;
 
 			const clock = new THREE.Clock();
@@ -31,17 +30,9 @@
 				asset: 'Samba Dancing'
 			};
 
-			const assets = [
-				'Samba Dancing',
-				'morph_test'
-			];
-
 			init();
 
 			function init() {
-				const container = document.createElement( 'div' );
-				document.body.appendChild( container );
-
 				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
 				camera.position.set( 100, 200, 300 );
 
@@ -61,8 +52,6 @@
 				dirLight.shadow.camera.left = - 120;
 				dirLight.shadow.camera.right = 120;
 				scene.add( dirLight );
-
-				// scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
 
 				// ground
 				const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), 
@@ -84,39 +73,17 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.setAnimationLoop( animate );
 				renderer.shadowMap.enabled = true;
-				container.appendChild( renderer.domElement );
+				document.body.appendChild( renderer.domElement );
 
 				const controls = new OrbitControls( camera, renderer.domElement );
 				controls.target.set( 0, 100, 0 );
 				controls.update();
 
 				window.addEventListener( 'resize', onWindowResize );
-
-				const gui = new GUI();
-				gui.add( params, 'asset', assets ).onChange( function ( value ) {
-					loadAsset( value );
-				} );
-
-				guiMorphsFolder = gui.addFolder( 'Morphs' ).hide();
 			}
 
 			function loadAsset( asset ) {
-				loader.load( 'https://raw.githubusercontent.com/ProfSunKim/threejs/main/fbx/' + asset + '.fbx', function ( group ) {
-					if ( object ) {
-						object.traverse( function ( child ) {
-							if ( child.material ) {
-								const materials = Array.isArray( child.material ) ? child.material : [ child.material ];
-								materials.forEach( material => {
-									if ( material.map ) material.map.dispose();
-									material.dispose();
-								} );
-							}
-							if ( child.geometry ) child.geometry.dispose();
-						} );
-						scene.remove( object );
-					}
-					object = group;
-
+				loader.load( 'https://raw.githubusercontent.com/ProfSunKim/threejs/main/fbx/' + asset + '.fbx', function (object) {
 					if ( object.animations && object.animations.length ) {
 						mixer = new THREE.AnimationMixer( object );
 
@@ -127,24 +94,6 @@
 						mixer = null;
 					}
 
-					guiMorphsFolder.children.forEach( ( child ) => child.destroy() );
-					guiMorphsFolder.hide();
-
-					object.traverse( function ( child ) {
-						if ( child.isMesh ) {
-							child.castShadow = true;
-							child.receiveShadow = true;
-
-							if ( child.morphTargetDictionary ) {
-								guiMorphsFolder.show();
-								const meshFolder = guiMorphsFolder.addFolder( child.name || child.uuid );
-								Object.keys( child.morphTargetDictionary ).forEach( ( key ) => {
-									meshFolder.add( child.morphTargetInfluences, child.morphTargetDictionary[ key ], 0, 1, 0.01 );
-								} );
-							}
-						}
-					} );
-                    
 					scene.add( object );
 				} );
 			}
